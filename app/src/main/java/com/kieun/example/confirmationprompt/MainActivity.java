@@ -112,23 +112,22 @@ public class MainActivity extends AppCompatActivity
             // Check this device supports confirmation prompt
             if (!ConfirmationPrompt.isSupported(this)) {
                 Log.w(TAG, "Confirmation Prompt is not supported on this device");
-                return true;
-            }
-
-            // RP provided challenge
-            byte[] challenge = UUID.randomUUID().toString().getBytes();
-            try {
-                generateKeyPair(KEY_NAME, true, challenge);
-                Certificate[] certificateChain = getAttestationCertificateChain(KEY_NAME);
-                // First entry of certificate chain is for Kpub
-                // This certificate chain should be sent to RP, and then verified.
-                // If verification is succeeded, RP should maintain Kpub.
-                for (int i = 0; i < certificateChain.length; i++) {
-                    Log.i(TAG, "Cert " + i + ": " + certificateChain[i].toString());
-                    Log.i(TAG, "PubKey " + i + ": " + Base64.encodeToString(certificateChain[i].getPublicKey().getEncoded(), Base64.URL_SAFE));
+            } else {
+                // RP provided challenge
+                byte[] challenge = UUID.randomUUID().toString().getBytes();
+                try {
+                    generateKeyPair(KEY_NAME, challenge);
+                    Certificate[] certificateChain = getAttestationCertificateChain(KEY_NAME);
+                    // First entry of certificate chain is for Kpub
+                    // This certificate chain should be sent to RP, and then verified.
+                    // If verification is succeeded, RP should maintain Kpub.
+                    for (int i = 0; i < certificateChain.length; i++) {
+                        Log.i(TAG, "Cert " + i + ": " + certificateChain[i].toString());
+                        Log.i(TAG, "PubKey " + i + ": " + Base64.encodeToString(certificateChain[i].getPublicKey().getEncoded(), Base64.URL_SAFE));
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, e.getLocalizedMessage());
                 }
-            } catch (Exception e) {
-                Log.e(TAG, e.getLocalizedMessage());
             }
 
         } else if (id == R.id.nav_authentication) {
@@ -192,12 +191,11 @@ public class MainActivity extends AppCompatActivity
     /**
      * Generate NIST P-256 EC Key pair for signing and verification
      * @param keyName
-     * @param invalidatedByBiometricEnrollment
      * @param challenge
      * @return
      * @throws Exception
      */
-    private KeyPair generateKeyPair(String keyName, boolean invalidatedByBiometricEnrollment, byte[] challenge) throws Exception {
+    private KeyPair generateKeyPair(String keyName, byte[] challenge) throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
 
         KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(keyName,
@@ -206,9 +204,7 @@ public class MainActivity extends AppCompatActivity
                 .setDigests(KeyProperties.DIGEST_SHA256,
                         KeyProperties.DIGEST_SHA384,
                         KeyProperties.DIGEST_SHA512)
-                // Require the user to authenticate with a biometric to authorize every use of the key
-                .setUserAuthenticationRequired(true)
-                .setInvalidatedByBiometricEnrollment(invalidatedByBiometricEnrollment)
+                .setUserConfirmationRequired(true)
                 .setAttestationChallenge(challenge);
 
         keyPairGenerator.initialize(builder.build());
