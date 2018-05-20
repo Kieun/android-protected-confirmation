@@ -11,6 +11,5 @@ You can refer Android P preview feature for getting more detailed information[1]
 Pre-requisites and limitation
 -----------------------------
 - Use Android Studio 3.2 to build this app (Android P)
-- Lack of method for checking biometric enrollment
 - Currently, there is no device providing this new feature. Google Pixel 3 will have this feature
 
